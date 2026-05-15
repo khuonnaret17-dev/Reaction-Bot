@@ -156,11 +156,18 @@ export default function TelegramBotDashboard() {
             const chatTitle = msg.chat.title || 'Private Chat';
             addLog(`${isEdit ? 'កែសម្រួល' : 'សារថ្មី'} ចេញពី "${chatTitle}": ${msg.text?.substring(0, 30) || 'Media'}`, "EVENT", "text-amber-400");
             
+            // Wait for 10 seconds before reacting as requested
+            addLog(`⏱️ រង់ចាំ ១០វិនាទី មុននឹងបាញ់ reactions...`, "INFO", "text-slate-400 italic");
+            await new Promise(r => setTimeout(r, 10000));
+
             // Execute reactions with limited number of bots based on target count
             const botsToUse = tokensRef.current.slice(0, targetCountRef.current);
             
             for (const [index, token] of botsToUse.entries()) {
               try {
+                // Distribute emojis: each bot picks one from the selected list in a rotating fashion
+                const emojiToUse = selectedEmojisRef.current[index % selectedEmojisRef.current.length];
+                
                 const reactResp = await fetch(`/api/telegram`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
@@ -170,13 +177,13 @@ export default function TelegramBotDashboard() {
                     body: {
                       chat_id: msg.chat.id,
                       message_id: msg.message_id,
-                      reaction: selectedEmojisRef.current.map(emoji => ({ type: 'emoji', emoji }))
+                      reaction: [{ type: 'emoji', emoji: emojiToUse }]
                     }
                   })
                 });
                 const reactData = await reactResp.json();
                 if (reactData.ok) {
-                  addLog(`✓ Bot #${index + 1} បានបាញ់ {${selectedEmojisRef.current.join(',')}} លើសារ ${msg.message_id}`, "SUCCESS", "text-emerald-500/80");
+                  addLog(`✓ Bot #${index + 1} បានបាញ់ ${emojiToUse} លើសារ ${msg.message_id}`, "SUCCESS", "text-emerald-500/80");
                 } else {
                   addLog(`! Bot #${index + 1} បរាជ័យ៖ ${reactData.description}`, "ERROR", "text-rose-400/80");
                 }
@@ -188,7 +195,7 @@ export default function TelegramBotDashboard() {
                 await new Promise(r => setTimeout(r, 60)); // Throttling
               }
             }
-            addLog(`🌩️ បាញ់រួចរាល់ចំនួន ${botsToUse.length} Reaction`, "SUCCESS", "text-sky-400 font-bold");
+            addLog(`🌩️ បាញ់រួចរាល់ចំនួន ${botsToUse.length} Reaction ចម្រុះ`, "SUCCESS", "text-sky-400 font-bold");
           }
         }
         lastUpdateIdRef.current = maxId;
@@ -317,7 +324,7 @@ export default function TelegramBotDashboard() {
                           newList = selectedEmojis.filter(e => e !== emoji);
                           if (newList.length === 0) return; // Must have at least one
                         } else {
-                          newList = [...selectedEmojis, emoji].slice(-3); // Limit to 3 (Telegram Premium limit)
+                          newList = [...selectedEmojis, emoji].slice(-11); // Increased limit as requested
                         }
                         setSelectedEmojis(newList);
                         selectedEmojisRef.current = newList;
@@ -335,7 +342,7 @@ export default function TelegramBotDashboard() {
                 })}
               </div>
               <p className="text-[9px] text-slate-500 italic mt-2">
-                * ជ្រើសរើសបានដល់ទៅ ៣ (Telegram limit)
+                * ជ្រើសរើសបានច្រើន (កំណត់ដោយសិទ្ធិរបស់ Channel)
               </p>
             </section>
 
