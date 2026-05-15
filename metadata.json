@@ -1,0 +1,6 @@
+{
+  "name": "Telegram Multi-Bot Reaction",
+  "description": "A high-performance dashboard to control multiple Telegram bots for automatic message reactions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
