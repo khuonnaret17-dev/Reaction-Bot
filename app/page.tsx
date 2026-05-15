@@ -43,18 +43,26 @@ export default function TelegramBotDashboard() {
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<'console' | 'settings' | 'help'>('console');
   const [activeTokenCount, setActiveTokenCount] = useState(0);
+  const [mounted, setMounted] = useState(false);
 
-  // Persistence Layer: Load
+  // Persistence Layer: Load on mount
   useEffect(() => {
+    setMounted(true);
     const savedTokens = localStorage.getItem('bot_tokens');
     const savedEmojis = localStorage.getItem('bot_emojis');
     const savedCount = localStorage.getItem('bot_target_count');
 
-    if (savedTokens) setTokens(savedTokens);
+    if (savedTokens) {
+      setTokens(savedTokens);
+    }
     if (savedEmojis) {
-      const parsed = JSON.parse(savedEmojis);
-      setSelectedEmojis(parsed);
-      selectedEmojisRef.current = parsed;
+      try {
+        const parsed = JSON.parse(savedEmojis);
+        setSelectedEmojis(parsed);
+        selectedEmojisRef.current = parsed;
+      } catch (e) {
+        console.error("Failed to parse emojis", e);
+      }
     }
     if (savedCount) {
       const val = parseInt(savedCount);
@@ -65,18 +73,21 @@ export default function TelegramBotDashboard() {
     addLog("ប្រព័ន្ធរួចរាល់៖ ទិន្នន័យត្រូវបានទាញយកពី LocalStorage", "INFO", "text-slate-500");
   }, []);
 
-  // Persistence Layer: Save
+  // Persistence Layer: Save ONLY after mounted to prevent clearing on initial load
   useEffect(() => {
+    if (!mounted) return;
     localStorage.setItem('bot_tokens', tokens);
-  }, [tokens]);
+  }, [tokens, mounted]);
 
   useEffect(() => {
+    if (!mounted) return;
     localStorage.setItem('bot_emojis', JSON.stringify(selectedEmojis));
-  }, [selectedEmojis]);
+  }, [selectedEmojis, mounted]);
 
   useEffect(() => {
+    if (!mounted) return;
     localStorage.setItem('bot_target_count', targetCount.toString());
-  }, [targetCount]);
+  }, [targetCount, mounted]);
 
   const addLog = (content: string, type: LogEntry['type'] = 'INFO', color?: string) => {
     const newLog: LogEntry = {
